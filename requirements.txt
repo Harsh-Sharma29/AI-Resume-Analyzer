@@ -9,4 +9,4 @@ pdfminer.six==20220524
 docx2txt==0.8
 
 pandas==1.4.4
-numpy==1.23.2
+numpy==2.0.0
