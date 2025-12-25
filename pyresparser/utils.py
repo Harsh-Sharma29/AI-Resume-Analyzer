@@ -12,14 +12,28 @@ from pdfminer.high_level import extract_text as pdf_extract_text  # avoid name c
 # -------------------------
 # File text extraction
 # -------------------------
-def extract_resume_text(file_path: str, ext: str) -> str:
-    """Extract raw text from a resume file path based on extension."""
+def extract_text(file_path: str, ext: str) -> str:
+    """
+    Backward-compatible API for pyresparser.
+    Many projects expect: pyresparser.utils.extract_text(file_path, extension)
+    """
     ext = (ext or "").lower().strip()
+
     if ext == ".pdf":
         return pdf_extract_text(file_path) or ""
+
     if ext == ".docx":
         return docx2txt.process(file_path) or ""
+
     return ""
+
+
+def extract_resume_text(file_path: str, ext: str) -> str:
+    """
+    Your newer helper name (kept for your App.py).
+    Internally uses extract_text() for a single source of truth.
+    """
+    return extract_text(file_path, ext)
 
 
 # -------------------------

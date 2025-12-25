@@ -221,9 +221,15 @@ def save_upload_to_disk(uploaded_file) -> Tuple[str, str]:
 
 
 # -------------------------
-# Cached parsing
+# Cached parsing (version-safe)
 # -------------------------
-@st.cache_data(show_spinner=False)
+try:
+    cache_decorator = st.cache_data  # Streamlit >= 1.18.0 [web:682]
+except AttributeError:
+    cache_decorator = st.cache       # Older Streamlit [web:682]
+
+
+@cache_decorator(show_spinner=False)
 def parse_resume_cached(file_path: str) -> dict:
     return ResumeParser(file_path).get_extracted_data() or {}
 
@@ -330,6 +336,7 @@ st.sidebar.caption("Tip: Click skill buttons in Skills tab to add them here.")
 st.sidebar.markdown("—")
 st.sidebar.caption("Privacy tip: avoid uploading personal resumes to a public deployment.")
 
+
 # -------------------------
 # Main header
 # -------------------------
@@ -363,7 +370,6 @@ except Exception as e:
     st.stop()
 
 st.success(f"✅ Uploaded: {os.path.basename(file_path)}")
-st.toast("Resume uploaded", icon="📄")
 
 with st.expander("📄 Preview uploaded resume", expanded=False):
     st.caption("If preview doesn’t load, the PDF may be restricted or large.")
@@ -382,15 +388,13 @@ if st.session_state.current_file_id != file_id:
             st.session_state.parsed_data = parsed
             st.session_state.current_file_id = file_id
             status.update(label="Resume analyzed successfully", state="complete", expanded=False)
-            st.toast("Resume analyzed successfully", icon="✅")
         except Exception as e:
             st.session_state.parsed_data = {}
             st.session_state.current_file_id = file_id
             status.update(label="Failed to parse resume", state="error", expanded=True)
-            st.toast("Failed to parse resume", icon="❌")
             st.error(f"❌ Failed to parse resume: {str(e)}")
 
-        # ✅ cleanup uploaded PDF after parsing (privacy)
+        # Cleanup uploaded PDF after parsing (privacy)
         try:
             os.remove(file_path)
         except OSError as e:
@@ -422,6 +426,7 @@ label, label_cls = score_label(resume_score)
 def _compute_and_store_match() -> None:
     ms, m_sk, miss = calculate_skill_match(st.session_state.jd_text, skills)
     st.session_state.match_result = (ms, m_sk, miss)
+
 
 if jd_text.strip():
     if st.session_state.match_result == (0, [], []):
@@ -498,7 +503,6 @@ st.markdown("## Job Description Match")
 recalc = st.button("🔄 Recalculate match")
 if recalc:
     _compute_and_store_match()
-    st.toast("Recalculated", icon="🔁")
 
 if jd_text.strip():
     st.progress(match_score / 100)
@@ -546,7 +550,6 @@ with tab_skills:
         st.warning("No skills detected. Add a dedicated Skills section in the resume.")
     else:
         s_left, _s_right = st.columns([1.2, 1])
-
         with s_left:
             query = st.text_input("Search skills", placeholder="Type: python, sql, fastapi…")
             mode = st.radio(
@@ -582,7 +585,6 @@ with tab_skills:
                 existing = st.session_state.jd_text.strip()
                 to_add = f"\n- {label_btn}"
                 st.session_state.jd_text = (existing + to_add).strip() if existing else f"- {label_btn}"
-                st.toast(f"Added: {label_btn}", icon="➕")
 
         st.markdown("#### Skill chips (read-only)")
         render_chips(view_list, max_items=120)
@@ -663,7 +665,7 @@ with tab_courses:
             if c["is_free"]:
                 meta_bits.append("FREE")
             meta = " • ".join(meta_bits)
-            st.markdown(f"{i}. [{c['title']}]({c['url']})  \n   _{meta}_")
+            st.markdown(f"{i}. [{c['title']}]({c['url']})\n_{meta}_")
 
         st.markdown("#### Download learning plan")
 
@@ -696,11 +698,10 @@ with tab_courses:
         writer = csv.DictWriter(csv_buf, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(export_rows)
-        csv_text = csv_buf.getvalue()
 
         st.download_button(
             label="⬇️ Download CSV",
-            data=csv_text,
+            data=csv_buf.getvalue(),
             file_name="learning_plan.csv",
             mime="text/csv",
             key="dl_learning_plan_csv",
