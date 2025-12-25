@@ -1,0 +1,7 @@
+__pycache__/
+.venv/
+venv/
+env/
+nltk_data/
+Uploaded_Resumes/
+.git/
