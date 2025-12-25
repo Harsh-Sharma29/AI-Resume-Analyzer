@@ -1,7 +1,7 @@
 streamlit>=1.32.0
 
 pyresparser==1.0.6
-spacy==2.3.5
+spacy==2.3.9
 https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-2.3.1/en_core_web_sm-2.3.1.tar.gz
 
 nltk>=3.8.1
